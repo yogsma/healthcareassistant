@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "projects": {
+    "db-access": {
+      "type": "library",
+      "root": "libs/db-access",
+      "entryFile": "src/index.ts",
+      "compilerOptions": {
+        "tsConfigPath": "libs/db-access/tsconfig.lib.json"
+      }
+    }
+  },
+  "compilerOptions": {
+    "deleteOutDir": true
+  }
+}

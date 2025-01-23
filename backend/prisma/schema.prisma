@@ -1,0 +1,41 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+
+model FileUpload {
+  id          String   @id @default(uuid())
+  url         String
+  file_name   String
+  original_name String
+  status        String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  DocumentEmbedding DocumentEmbedding[]
+}
+
+
+model DocumentEmbedding {
+  id        String        @id @default(uuid())
+  fileId    String
+  content   String     @db.Text
+  embedding Unsupported("vector")
+  file      FileUpload @relation(fields: [fileId], references: [id])
+  created_at DateTime  @default(now())
+
+  @@index([embedding(type: ivfflat)])
+}
