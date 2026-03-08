@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as pdf from 'pdf-parse';
 import OpenAI from 'openai';
 import { DBAccessService } from 'libs/src';
+import { decryptBuffer, getEncryptionKey } from './crypto.util';
 
 @Injectable()
 export class FileProcessingService {
@@ -32,10 +33,12 @@ export class FileProcessingService {
         throw new Error('File not found');
       }
 
-      // 2. Read PDF file
+      // 2. Read and decrypt file
       const filePath = path.join(process.cwd(), 'uploads', fileData.file_name);
-      const dataBuffer = await fs.readFile(filePath);
-      
+      const encryptedBuffer = await fs.readFile(filePath);
+      const encryptionKey = getEncryptionKey(this.configService.get<string>('FILE_ENCRYPTION_KEY'));
+      const dataBuffer = decryptBuffer(encryptedBuffer, encryptionKey);
+
       // 3. Extract text from PDF
       const pdfData = await pdf(dataBuffer);
       const text = pdfData.text;

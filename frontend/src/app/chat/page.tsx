@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,6 +15,8 @@ interface ChatMessage {
 }
 
 export default function ChatPage() {
+  const searchParams = useSearchParams()
+  const fileId = searchParams.get("fileId") ?? ""
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -32,7 +35,7 @@ export default function ChatPage() {
     setIsLoading(true)
 
     try {
-        const { answer } = await sendChatMessage(input)
+        const { answer } = await sendChatMessage(fileId, input)
         
         const assistantMessage: ChatMessage = {
           role: "assistant",
