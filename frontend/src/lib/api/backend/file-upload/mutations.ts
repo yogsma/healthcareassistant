@@ -1,9 +1,9 @@
 import axios, { AxiosProgressEvent } from 'axios'
+import apiClient from '@/lib/api/client'
 
 interface UploadFileResponse {
   fileId: string
   url: string
-  // Add other response fields as needed
 }
 
 interface UploadProgressCallback {
@@ -17,29 +17,26 @@ export async function uploadFile(
   const formData = new FormData()
   formData.append('file', file)
 
-  try {    
-    const response = await axios.post<UploadFileResponse>(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/files/upload`,
+  try {
+    const response = await apiClient.post<UploadFileResponse>(
+      '/api/files/upload',
       formData,
       {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-            if (onProgress && progressEvent.total) {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              )
-              onProgress(percentCompleted)
-            }
+          if (onProgress && progressEvent.total) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            )
+            onProgress(percentCompleted)
+          }
         },
       }
     )
-
     return response.data
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      throw new Error('Failed to upload file');
+      throw new Error('Failed to upload file')
     }
     throw error
   }

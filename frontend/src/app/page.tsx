@@ -32,7 +32,7 @@ export default function Home() {
         setProgress(progress)
       })
       
-      router.push('/chat')
+      router.push(`/chat?fileId=${result.fileId}`)
     } catch (error) {
       console.error('Upload failed:', error)
       // Optionally show error toast here
