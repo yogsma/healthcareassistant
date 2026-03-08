@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { DBAccessService } from 'libs/src';
@@ -17,8 +17,13 @@ export class ChatService {
     });
   }
 
-  async getAnswer(fileId: string, question: string) {
+  async getAnswer(fileId: string, question: string, userId: string) {
     try {
+      // 0. Verify the requesting user owns this file
+      const file = await this.prisma.fileUpload.findUnique({ where: { id: fileId } });
+      if (!file) throw new NotFoundException('File not found');
+      if (file.userId && file.userId !== userId) throw new ForbiddenException('Access denied');
+
       // 1. Generate embedding for the question
       const questionEmbedding = await this.generateEmbedding(question);
 
@@ -42,7 +47,7 @@ export class ChatService {
           },
           {
             role: "user",
-            content: `Context from the document:\n${(similarDocs as { content: string }[]).map(doc => doc.content).join('\n\n')}\n\nQuestion: ${question}`
+            content: `Context from the document:\n${(similarDocs as { content: string }[]).map(doc => doc.content).join('\n\n')}\n\n[END OF DOCUMENT CONTEXT]\n\nUser question: ${question}`,
           }
         ],
         temperature: 0.3,

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Express } from 'express';
 import * as path from 'path';
 import * as fs from 'fs/promises';
@@ -6,15 +7,18 @@ import { v4 as uuidv4 } from 'uuid';
 import { DBAccessService } from 'libs/src';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { encryptBuffer, getEncryptionKey } from './crypto.util';
 
 @Injectable()
 export class AppService {
   private readonly logger = new Logger(AppService.name);
-  constructor(private readonly dbAccessService: DBAccessService,
-    @InjectQueue('file-processing') private fileProcessingQueue: Queue
+  constructor(
+    private readonly dbAccessService: DBAccessService,
+    private readonly configService: ConfigService,
+    @InjectQueue('file-processing') private fileProcessingQueue: Queue,
   ) {}
 
-  async processUploadedFile(file: Express.Multer.File) {
+  async processUploadedFile(file: Express.Multer.File, userId: string) {
     // Generate a unique ID for the file
     const fileId = uuidv4();
     
@@ -33,24 +37,24 @@ export class AppService {
     const fileExtension = path.extname(file.originalname);
     const fileName = `${fileId}${fileExtension}`;
     const filePath = path.join(uploadDir, fileName);
-    this.logger.log('file original name', file.originalname);
-    this.logger.log('saving file to', filePath);
+    this.logger.log('saving uploaded file to disk');
     
     try {
-      await fs.writeFile(filePath, new Uint8Array(file.buffer));
+      const encryptionKey = getEncryptionKey(this.configService.get<string>('FILE_ENCRYPTION_KEY'));
+      const encryptedData = encryptBuffer(Buffer.from(file.buffer), encryptionKey);
+      await fs.writeFile(filePath, encryptedData);
     } catch (error) {
-      console.error('Failed to save file:', error);
+      this.logger.error('Failed to save file');
       throw error;
     }
-    
-    // In production, this would be your cloud storage URL
+
     const url = `/uploads/${fileName}`;
 
     this.logger.log('saving file metadata to database');
-    // Save file metadata to database
     await this.dbAccessService.fileUpload.create({
       data: {
         id: fileId,
+        userId,
         url,
         file_name: fileName,
         original_name: file.originalname,
