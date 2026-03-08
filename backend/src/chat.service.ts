@@ -23,8 +23,9 @@ export class ChatService {
       const questionEmbedding = await this.generateEmbedding(question);
 
       // 2. Find most similar content chunks
+      const embeddingStr = JSON.stringify(questionEmbedding);
       const similarDocs = await this.prisma.$queryRaw`
-        SELECT content, 1 - (embedding <=> ${questionEmbedding}::vector) as similarity
+        SELECT content, 1 - (embedding <=> ${embeddingStr}::vector) as similarity
         FROM "DocumentEmbedding"
         WHERE "fileId" = ${fileId}
         ORDER BY similarity DESC
